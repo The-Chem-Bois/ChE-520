@@ -101,3 +101,11 @@ if __name__ == "__main__":
     antoine_coeffs = np.array([[15.9008, 2788.51, -52.34], [16.0137, 3096.52, -53.67], [16.1156, 3395.57, -59.44]]);
 
     case_1_solver(eps1, antoine_coeffs, T, P, fk, 'P', 0.01);
+
+''' 
+Questions to ask Nasser
+
+1. Do units of fk matter? Or do we only care that they are consistent with each other?
+2. Extra examples so I could verify my functions?
+
+'''
