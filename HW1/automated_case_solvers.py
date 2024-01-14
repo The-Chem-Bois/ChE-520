@@ -107,5 +107,6 @@ Questions to ask Nasser
 
 1. Do units of fk matter? Or do we only care that they are consistent with each other?
 2. Extra examples so I could verify my functions?
+3. What is fk? What is K?
 
 '''
