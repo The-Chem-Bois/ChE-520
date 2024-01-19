@@ -16,15 +16,15 @@ def get_vapor_pressure(antoine_coeffs, T):
         P_vaps[i] = P_vap
     return P_vaps
 
-def calc_relative_volatility(epsilon_or_phi, P, fk, P_vaps, parameter: str):
+def calc_relative_volatility(epsilon_or_phi, P, fk, P_vaps, parameter: str, key_component = 0):
     # Calculates epsilon values, relative volatilities, vapor and liquid compositions, vapor flow, liquid flow, total flow, and average volatility
     # Parameter can be 'epsilon' or 'phi' as strings.
 
-    K_n = P_vaps/P # k values (P vapor pressure)/ (Total Pressure) for all key components
+    K_n = P_vaps/P # k values (P vapor pressure)/ (Total Pressure) for all key components.
 
 
     eps_n = None # initialize variable eps_n
-    alpha_k = None # initialize variable alpha_k for volatility of each component
+    alpha_k = None # initialize variable alpha_k for volatility of each component.
     
     if parameter == 'epsilon':
         alpha_k = K_n / K_n[epsilon_or_phi.position - 1] # calculates array of relative volatilities for each component relative to the epsilon component provided
@@ -33,7 +33,7 @@ def calc_relative_volatility(epsilon_or_phi, P, fk, P_vaps, parameter: str):
         theta = K_n * epsilon_or_phi / (1- epsilon_or_phi)
         eps_n = theta/(1 + theta)
         # By default, select the first key
-        alpha_k = K_n/ K_n[0]
+        alpha_k = K_n/ K_n[key_component]
 
     # Calculate Vapor and Liquid flow rates (total and for each component)
     V_k = eps_n*fk
@@ -49,7 +49,7 @@ def calc_relative_volatility(epsilon_or_phi, P, fk, P_vaps, parameter: str):
 
     return (K_n, alpha_k, eps_n, V_k, L_k, V, L, Total_Flow, x_k, y_k, alpha_bar)
 
-def calc_bubble_dew_T(alpha_k, alpha_bar, antoine_coeffs, index ): 
+def check_T(alpha_k, alpha_bar, antoine_coeffs, index ): 
     #Calcuate vapor pressure based in terms of alpha calculated on majority liquid key component
     P_k_vap = alpha_k[index]/alpha_bar * P
     # Rearrange antoine's equation and solve for T
@@ -58,7 +58,7 @@ def calc_bubble_dew_T(alpha_k, alpha_bar, antoine_coeffs, index ):
 
     return T_calc
 
-def calc_bubble_dew_P(alpha_k, alpha_bar, P_vaps, index):
+def check_P(alpha_k, alpha_bar, P_vaps, index):
      
      P_calc = alpha_bar/alpha_k[index] * P_vaps[index]
 
@@ -93,7 +93,7 @@ def case1_solver(epsilon, antoine_coeffs, T: float, P: float, fk, specification:
 
         if specification == 'P':
             # Running this code block if T was guessed
-            T_calc = calc_bubble_dew_T(alpha_k, alpha_bar, antoine_coeffs, majority_index)
+            T_calc = check_T(alpha_k, alpha_bar, antoine_coeffs, majority_index)
 
             if (np.abs(T_calc - T) <= tolerance):
                 print(f'Converged after {iterations} iterations! Epsilons of each component: {eps_n}, temperature: {T} Kelvin')
@@ -104,7 +104,7 @@ def case1_solver(epsilon, antoine_coeffs, T: float, P: float, fk, specification:
 
         elif specification == 'T':
             # Running this code block if P was guessed
-            P_calc = calc_bubble_dew_P(alpha_k, alpha_bar, P_vaps, majority_index)
+            P_calc = check_P(alpha_k, alpha_bar, P_vaps, majority_index)
         
             if (np.abs(P_calc - P) <= tolerance):
                 print(f'Converged after {iterations} iterations! Epsilons of each component: {eps_n}, pressure: {P} mmHg')
@@ -140,7 +140,7 @@ def case2_solver(epsilon, antoine_coeffs, T: float, P: float, fk, tolerance = 0.
         P_vaps = get_vapor_pressure(antoine_coeffs, T)
 
         # Calculate K, epsilon, and flow rates (vapor and total)
-        K_n, alpha_k, eps_n, V_k, L_k, V, L, Total_Flow, x_k, y_k, alpha_bar = calc_relative_volatility(epsilon, P, fk, P_vaps)
+        K_n, alpha_k, eps_n, V_k, L_k, V, L, Total_Flow, x_k, y_k, alpha_bar = calc_relative_volatility(epsilon, P, fk, P_vaps, 'epsilon')
 
         phi = V/Total_Flow
         
@@ -158,12 +158,13 @@ def case2_solver(epsilon, antoine_coeffs, T: float, P: float, fk, tolerance = 0.
             print("failed to converge")
             break;
     
-def case3_solver(phi, antoine_coeffs, T: float, P: float, fk, specification: str, tolerance = 0.01, maxiter = 50):
+def case3_solver(phi, antoine_coeffs, key_component: int, T: float, P: float, fk, specification: str, tolerance = 0.01, maxiter = 50):
     '''
     For a specified T and P, choose a key component n and specify its epsilon
 
     phi: An object with a guessed property value for epsilon as well as its key position (n). (properties: value, position)
     antoine_coeffs: Array containing arrays of each key's anotine coefficients. (Order matters, requires 3 coefficients A, B, C)
+    key_component: integer of the key component.
     T: Temperature in Kelvin.
     P: Pressure in mmHg.
     fk: Array of the fk value for each component in mol/s. (Order matters).
@@ -175,13 +176,13 @@ def case3_solver(phi, antoine_coeffs, T: float, P: float, fk, specification: str
     while iterations < maxiter:
 
         P_vaps = get_vapor_pressure(antoine_coeffs, T);
-        K_n, alpha_k, eps_n, V_k, L_k, V, L, Total_Flow, x_k, y_k, alpha_bar = calc_relative_volatility(phi, P, fk, P_vaps, parameter='phi' )
+        K_n, alpha_k, eps_n, V_k, L_k, V, L, Total_Flow, x_k, y_k, alpha_bar = calc_relative_volatility(phi, P, fk, P_vaps, parameter='phi', key_component=key_component )
 
         majority_index = np.argmax(x_k) # get the index of the component that has the highest liquid composition
 
         if specification == 'P':
             # Running this code block if T was guessed
-            T_calc = calc_bubble_dew_T(alpha_k, alpha_bar, antoine_coeffs, majority_index)
+            T_calc = check_T(alpha_k, alpha_bar, antoine_coeffs, majority_index)
 
             if (np.abs(T_calc - T) <= tolerance):
                 print(f'Converged after {iterations} iterations! Epsilons of each component: {eps_n}, temperature: {T} Kelvin')
@@ -192,7 +193,7 @@ def case3_solver(phi, antoine_coeffs, T: float, P: float, fk, specification: str
 
         elif specification == 'T':
             # Running this code block if P was guessed
-            P_calc = calc_bubble_dew_P(alpha_k, alpha_bar, P_vaps, majority_index)
+            P_calc = check_P(alpha_k, alpha_bar, P_vaps, majority_index)
         
             if (np.abs(P_calc - P) <= tolerance):
                 print(f'Converged after {iterations} iterations! Epsilons of each component: {eps_n}, pressure: {P} mmHg')
@@ -217,7 +218,7 @@ if __name__ == "__main__":
             self.position = position
     
     #case 1 we are providing Eps_2 = 0.8 and P = 1 bar
-    eps1 = Epsilon(0.9, 2 )
+    eps1 = Epsilon(0.8, 2 )
     P = 750 ## 1 bar = 750 mmHg
     T = 390 ## Initial guess
     fk = np.array([30, 50, 40]);
@@ -226,17 +227,19 @@ if __name__ == "__main__":
 
     # case1_solver(eps1, antoine_coeffs, T, P, fk, 'P', 0.01);
     # case2_solver(eps1, antoine_coeffs, 385, 750, fk, tolerance=0.001, maxiter=100)\
-    case3_solver(phi, antoine_coeffs, 390, P, fk, 'P');
+    case3_solver(phi, antoine_coeffs, 2, 390, P, fk, 'P');
 
 ''' 
 Questions to ask Nasser
 
 1. Do units of fk matter? Or do we only care that they are consistent with each other?
 2. Extra examples so I could verify my functions?
-3. What is fk? What is K?
+3. What is fk? What is K? vapor-liquid coefficient -- (generalized correlation)
 4. Bubble point and dew point equations explanation
 5. What is V_k and L_k?
 6. !!! For case3, when calculating alpha_k_n (volatility) for each component. W.r.t. to which component am I calculating each volatility? (Choose)
 7. What are we returning for "flash calculations" ? 
+
+# F, V, L, compositions
 
 '''
