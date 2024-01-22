@@ -49,7 +49,7 @@ def calc_relative_volatility(epsilon_or_phi, P, fk, P_vaps, parameter: str, key_
 
     return (K_n, alpha_k, eps_n, V_k, L_k, V, L, Total_Flow, x_k, y_k, alpha_bar)
 
-def check_T(alpha_k, alpha_bar, antoine_coeffs, index ): 
+def check_T(P, alpha_k, alpha_bar, antoine_coeffs, index ): 
     #Calcuate vapor pressure based in terms of alpha calculated on majority liquid key component
     P_k_vap = alpha_k[index]/alpha_bar * P
     # Rearrange antoine's equation and solve for T
@@ -63,6 +63,55 @@ def check_P(alpha_k, alpha_bar, P_vaps, index):
      P_calc = alpha_bar/alpha_k[index] * P_vaps[index]
 
      return P_calc
+
+def calc_bubble_point_flash(T: float or None, P: float or None, alpha_bar, antoine_coeffs, P_vap, specification: str):
+    '''
+    T: Temperature in Kelvin. Float or can be None if P specified.
+    P: Pressure in mmHg. Float or can be None if T specified.
+    alpha_bar: Average relative volatilities.
+    antoine_coeffs: Antoine coefficients for majority key.
+    P_vap: Vapor pressure of majority key as a function of T.
+    specification: Can be 'T' or 'P' strings based on what is specified.
+    '''
+
+    if (specification == 'T'):
+        Pressure = alpha_bar * P_vap
+
+        return (Pressure)
+    else:
+        vap_pressure = alpha_bar**(-1) * P
+        A, B, C = antoine_coeffs
+        Temperature = B/(A-np.log(vap_pressure)) - C
+
+        return (Temperature)
+    
+def calc_dew_point_flash(T: float or None, P: float or None, antoine_coeffs, P_vap, y_k, K, maj_key, specification: str):
+    '''
+    T: Temperature in Kelvin. Float or can be None if P specified.
+    P: Pressure in mmHg. Float or can be None if T specified.
+    alpha_bar: Average relative volatilities.
+    antoine_coeffs: Antoine coefficients for majority key.
+    P_vap: Vapor pressure of majority key as a function of T.
+    y_k: Array of Fraction compositions in vapor phase for each key.
+    K : Array of K values for every key.
+    maj_key: index of the majority key.
+    specification: Can be 'T' or 'P' strings based on what is specified.
+    '''
+
+    alpha_k_n = K/K[maj_key - 1]
+
+    if (specification == 'T'):
+        Pressure = P_vap * sum(y_k/alpha_k_n)**-1
+
+        return (Pressure)
+    else:
+        vap_pressure = P*sum(y_k/alpha_k_n)
+        A, B, C = antoine_coeffs
+        Temperature = B/(A-np.log(vap_pressure)) - C
+
+        return (Temperature)
+
+
 
 
 def case1_solver(epsilon, antoine_coeffs, T: float, P: float, fk, specification: str, tolerance = 0.5, maxiter= 50):
@@ -78,6 +127,7 @@ def case1_solver(epsilon, antoine_coeffs, T: float, P: float, fk, specification:
     tolerance: Acceptable tolerance, default is 0.5.
     maxiter: The maximum number of iterations, default is 50.
     '''
+    # breakpoint()
 
     iterations = 1
 
@@ -93,10 +143,14 @@ def case1_solver(epsilon, antoine_coeffs, T: float, P: float, fk, specification:
 
         if specification == 'P':
             # Running this code block if T was guessed
-            T_calc = check_T(alpha_k, alpha_bar, antoine_coeffs, majority_index)
+            T_calc = check_T(P, alpha_k, alpha_bar, antoine_coeffs, majority_index)
 
             if (np.abs(T_calc - T) <= tolerance):
+                # P_flash = calc_bubble_point_flash(T_calc, P, alpha_bar, antoine_coeffs[majority_index - 1], P_vaps[majority_index - 1], specification='P')
+                # T_flash = calc_dew_point_flash(T_calc, P, antoine_coeffs[majority_index - 1], P_vaps[majority_index - 1], y_k, K_n, majority_index, specification='P')
+
                 print(f'Converged after {iterations} iterations! Epsilons of each component: {eps_n}, temperature: {T} Kelvin')
+                # print (f'Flash pressure: {P_flash} mmHg, Flash Temperature: {T_flash} K')
                 break;
             else:
                 T = (T + T_calc)/ 2
@@ -225,9 +279,9 @@ if __name__ == "__main__":
     phi = 0.5
     antoine_coeffs = np.array([[15.9008, 2788.51, -52.34], [16.0137, 3096.52, -53.67], [16.1156, 3395.57, -59.44]]);
 
-    # case1_solver(eps1, antoine_coeffs, T, P, fk, 'P', 0.01);
+    case1_solver(eps1, antoine_coeffs, T, P, fk, 'P', 0.01);
     # case2_solver(eps1, antoine_coeffs, 385, 750, fk, tolerance=0.001, maxiter=100)\
-    case3_solver(phi, antoine_coeffs, 2, 390, P, fk, 'P');
+    # case3_solver(phi, antoine_coeffs, 2, 390, P, fk, 'P');
 
 ''' 
 Questions to ask Nasser
