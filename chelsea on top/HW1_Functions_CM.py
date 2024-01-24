@@ -67,7 +67,7 @@ def relative_volatility(P, Pvap_k, Pvap_n):
     relative_volatility_k : ARRAY
         ARRAY OF RELATIVE VOLATILITIES OF EACH COMPONENT.
     '''
-    
+        
     K_k = np.array(Pvap_k)/P #Compute K_k for each component
     K_n = Pvap_n/P #Compute K_n for the key component
     relative_volatility_k = K_k/K_n #Compute the relative volatility of each component
@@ -121,9 +121,18 @@ def average_volatility(relative_volatility, fk, eps_n):
     #print(np.sum(fk))
     #print(F)
     
-    xk = lk/L #Compute the liquid mole fractions of each component
-    yk = vk/V #Compute the vapour mole fractions of each component
+    if V == 0:
+        xk = lk/L #Compute the liquid mole fractions of each component
+        yk = np.zeros(np.shape(fk))
     
+    elif L == 0:
+        yk = vk/V #Compute the vapour mole fractions of each component
+        xk = np.zeros(np.shape(fk))
+    
+    else:
+        xk = lk/L #Compute the liquid mole fractions of each component
+        yk = vk/V #Compute the vapour mole fractions of each component
+        
     volatility = np.zeros(np.shape(xk)) #Initialize an empty array for the product of the liquid mole fraction and relative volatility
     
     #Compute the product of the liquid mole fraction and relative volatility for each component
@@ -169,42 +178,24 @@ def bubble_point(T_or_P_val, T_or_P_val_init, fk, A, B, C, n, Find_T = False):
 
     '''
 
-    tol = 1e-7 #Set a tolerance for the final solution
-    eps_n = 0 #For bubble point, the eps values are equal to zero
+    tol = 1e-6 #Set a tolerance for the final solution
     iteration = 0 #Initialize a counter
     
     #If Find_T = False, we are given temperature and need to guess an initial pressure
     if Find_T == False:
         T = T_or_P_val #Define the temperature from the inputs
-        P0 = T_or_P_val_init #Define the initial pressure guess from the inputs
-        
-        error_P = 1 #Initialize error for pressure value
         
         #Initialize empty vapour pressure array
         Pvap = np.zeros(np.shape(A))
-        #Calculate the vapour pressure for each component
+        zk = np.zeros(np.shape(A))
+        P_new = 0
+        #Calculate the vapour pressure and feed mole fraction for each component
         for k in range(len(Pvap)):
             Pvap[k] = Antoine(A[k], B[k], C[k], T)
+            zk[k] = fk[k]/np.sum(fk) 
+            P_new += Pvap[k]*zk[k] #Compute the bubble point pressure
         
-        #While the absolute error betweent the pressures is greater than the tolerance, continue to iterate
-        while error_P > tol:
-            
-            iteration += 1
-            rv = relative_volatility(P0, Pvap, Pvap[n])
-            av = average_volatility(rv[1], fk, eps_n)
-            
-            avg_alpha = av[0] #Compute the average relative volatility of the mixture
-            xk = av[1] #Compute the liquid mole fractions of each component
-            
-            x_ind = np.argmax(xk) #Determine component with maximum liquid composition
-            
-            P_new = avg_alpha*Pvap[x_ind] #Compute the bubble point pressure
-            
-            error_P = abs(P0-P_new) #Calculate the absolute error between the initial guess and calculated pressure
-            
-            P0 = P_new #Set the initial guess equal to the calculated pressure
-            
-        print("After",iteration,"iterations, the pressure has converged to", P_new, "mmHg.")   
+        print("The bubble point pressure is", P_new, "mmHg.")   
         return(P_new)
     
     #If Find_T = True, we are given pressure and need to guess an initial temperature
@@ -219,28 +210,24 @@ def bubble_point(T_or_P_val, T_or_P_val_init, fk, A, B, C, n, Find_T = False):
             
             iteration += 1
             
-            #Initialize empty vapour pressure array
+            #Initialize empty vapour pressure and feed mole fraction array
             Pvap = np.zeros(np.shape(A))
+            zk = np.zeros(np.shape(A))
+            P_sat = np.zeros(np.shape(A))
             #Calculate the vapour pressure for each component
             for k in range(len(Pvap)):
                 Pvap[k] = Antoine(A[k], B[k], C[k], T0)
+                zk[k] = fk[k]/np.sum(fk) 
+                P_sat[k] = Pvap[k]*zk[k] #Compute the bubble point pressure
             
-            rv = relative_volatility(P, Pvap, Pvap[n])
-            av = average_volatility(rv[1], fk, eps_n)
+            P_new = np.sum(P_sat)
             
-            avg_alpha = av[0] #Compute the average relative volatility of the mixture
-            xk = av[1] #Compute the liquid mole fractions of each component
+            T_new = Antoine(A[np.argmax(zk)], B[np.argmax(zk)], C[np.argmax(zk)], P_new, Find_T = True) #Compute the bubble point temperature
             
-            x_ind = np.argmax(xk) #Determine component with maximum liquid composition
-            
-            Pvap_n = (avg_alpha)**(-1)*P #Compute the bubble point vapor pressure
-            
-            T_new = Antoine(A[x_ind], B[x_ind], C[x_ind], Pvap_n, Find_T = True) #Compute the bubble point temperature
-            
-            error_T = abs(T0-T_new) #Calculate the absolute error between the initial guess and calculated temperature
+            error_T = abs((T_new - T0)/T0) #Calculate the absolute error between the initial guess and calculated temperature
             
             T0 = T_new #Set the initial guess equal to the calculated temperature
-            
+          
         print("After",iteration,"iterations, the temperature has converged to", T_new, "K.")   
         return(T_new)
     
@@ -248,8 +235,8 @@ def bubble_point(T_or_P_val, T_or_P_val_init, fk, A, B, C, n, Find_T = False):
         print("Invalid Input")
         
 #Test Cases
-#print(bubble_point(391, 390, [30,50,40],[15.9008,16.0137,16.1156],[2788.51,3096.52,3395.57],[-52.34,-53.67,-59.44],1))
-#print(bubble_point(750, 390, [30,50,40],[15.9008,16.0137,16.1156],[2788.51,3096.52,3395.57],[-52.34,-53.67,-59.44],1, Find_T=True))
+#print(bubble_point(390, 700, [30,50,40],[15.9008,16.0137,16.1156],[2788.51,3096.52,3395.57],[-52.34,-53.67,-59.44],1))
+#print(bubble_point(750, 310, [30,50,40],[15.9008,16.0137,16.1156],[2788.51,3096.52,3395.57],[-52.34,-53.67,-59.44],1, Find_T=True))
 
 #Define a function to compute the bubble point temperature or pressure
 def dew_point(T_or_P_val, T_or_P_val_init, fk, A, B, C, n, Find_T = False):
@@ -277,53 +264,31 @@ def dew_point(T_or_P_val, T_or_P_val_init, fk, A, B, C, n, Find_T = False):
     Returns
     -------
     T_new : FLOAT
-        FINAL BUBBLE POINT TEMPERATURE IN K
+        FINAL DEW POINT TEMPERATURE IN K
     P_new : FLOAT
-        FINAL BUBBLE POINT PRESSURE IN mmHg
+        FINAL DEW POINT PRESSURE IN mmHg
 
     '''
 
-    tol = 1e-7 #Set a tolerance for the final solution
-    eps_n = 1 #For bubble point, the eps values are equal to zero
+    tol = 1e-6 #Set a tolerance for the final solution
     iteration = 0 #Initialize a counter
     
     #If Find_T = False, we are given temperature and need to guess an initial pressure
     if Find_T == False:
         T = T_or_P_val #Define the temperature from the inputs
-        P0 = T_or_P_val_init #Define the initial pressure guess from the inputs
         
-        error_P = 1 #Initialize error for pressure value
-        
-        #Initialize empty vapour pressure array
+        #Initialize empty vapour pressure and feed mole fractions array
         Pvap = np.zeros(np.shape(A))
+        zk = np.zeros(np.shape(A))
+        P_new = 0
         #Calculate the vapour pressure for each component
         for k in range(len(Pvap)):
             Pvap[k] = Antoine(A[k], B[k], C[k], T)
+            zk[k] = fk[k]/np.sum(fk) 
+            P_new += zk[k]/Pvap[k] #Compute the dew point pressure
         
-        #While the absolute error betweent the pressures is greater than the tolerance, continue to iterate
-        while error_P > tol:
-            
-            iteration += 1
-            rv = relative_volatility(P0, Pvap, Pvap[n])
-            av = average_volatility(rv[1], fk, eps_n)
-            
-            alpha = rv[1] #Compute the relative volatility of the mixture
-            yk = av[2] #Compute the liquid mole fractions of each component
-            
-            y_ind = np.argmax(yk) #Determine component with maximum liquid composition
-            
-            #Computes the summation term to calculate the new pressure
-            summation = np.zeros(np.shape(A))
-            for i in range(len(summation)):
-                summation[i] = yk[i]/alpha[i]
-            
-            P_new = Pvap[y_ind]*(np.sum(summation))**(-1) #Compute the bubble point pressure
-            
-            error_P = abs(P0-P_new) #Calculate the absolute error between the initial guess and calculated pressure
-            
-            P0 = P_new #Set the initial guess equal to the calculated pressure
-            
-        print("After",iteration,"iterations, the pressure has converged to", P_new, "mmHg.")   
+        P_new = 1/P_new
+        print("The dew point pressure is", P_new, "mmHg.")   
         return(P_new)
     
     #If Find_T = True, we are given pressure and need to guess an initial temperature
@@ -331,37 +296,27 @@ def dew_point(T_or_P_val, T_or_P_val_init, fk, A, B, C, n, Find_T = False):
         P = T_or_P_val #Define the pressure from the inputs
         T0 = T_or_P_val_init #Define the initial temperature guess from the inputs
         
-        error_T = 1 #Initialize error for temperature value
+        error_P = 1 #Initialize error for temperature value
                 
         #While the absolute error between the temperatures is greater than the tolerance, continue to iterate
-        while error_T > tol:
+        while error_P > tol :
             
             iteration += 1
             
-            #Initialize empty vapour pressure array
+            #Initialize empty vapour pressure and feed mole fraction array
             Pvap = np.zeros(np.shape(A))
+            zk = np.zeros(np.shape(A))
+            P_new = np.zeros(np.shape(A))
             #Calculate the vapour pressure for each component
             for k in range(len(Pvap)):
                 Pvap[k] = Antoine(A[k], B[k], C[k], T0)
+                zk[k] = fk[k]/np.sum(fk) 
+                P_sat = zk[k]/Pvap[k] #Compute the dew point pressure
             
-            rv = relative_volatility(P, Pvap, Pvap[n])
-            av = average_volatility(rv[1], fk, eps_n)
+            P_new = np.sum(P_sat)
+            T_new = Antoine(A[np.argmax(zk)], B[np.argmax(zk)], C[np.argmax(zk)], P_new, Find_T = True) #Compute the dew point temperature
             
-            alpha = rv[1] #Compute the average relative volatility of the mixture
-            yk = av[2] #Compute the liquid mole fractions of each component
-            
-            y_ind = np.argmax(yk) #Determine component with maximum vapor composition
-            
-            #Computes the summation term to calculate the new vapor pressure
-            summation = np.zeros(np.shape(A))
-            for i in range(len(summation)):
-                summation[i] = yk[i]/alpha[i]
-            
-            Pvap_n = P*(np.sum(summation)) #Compute the bubble point vapor pressure
-            
-            T_new = Antoine(A[y_ind], B[y_ind], C[y_ind], Pvap_n, Find_T = True) #Compute the bubble point temperature
-            
-            error_T = abs(T0-T_new) #Calculate the absolute error between the initial guess and calculated temperature
+            error_P = abs((P_new - P)/P) #Calculate the absolute error between the initial guess and calculated temperature
             
             T0 = T_new #Set the initial guess equal to the calculated temperature
             
@@ -373,7 +328,7 @@ def dew_point(T_or_P_val, T_or_P_val_init, fk, A, B, C, n, Find_T = False):
         
 #Test Cases
 #print(dew_point(391, 390, [30,50,40],[15.9008,16.0137,16.1156],[2788.51,3096.52,3395.57],[-52.34,-53.67,-59.44],1))
-#print(dew_point(750, 1000, [30,50,40],[15.9008,16.0137,16.1156],[2788.51,3096.52,3395.57],[-52.34,-53.67,-59.44],1, Find_T=True))
+#print(dew_point(750, 310, [30,50,40],[15.9008,16.0137,16.1156],[2788.51,3096.52,3395.57],[-52.34,-53.67,-59.44],1, Find_T=True))
 
 #Define a function to perform case 1 flash calculations
 def case1_flash(eps_n, T_or_P_val, T_or_P_val_init, fk, A, B, C, n, Find_T = True):
