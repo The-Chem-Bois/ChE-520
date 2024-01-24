@@ -64,52 +64,50 @@ def check_P(alpha_k, alpha_bar, P_vaps, index):
 
      return P_calc
 
-def calc_bubble_point_flash(T: float or None, P: float or None, alpha_bar, antoine_coeffs, P_vap, specification: str):
+def calc_bubble_point (P, T, fk, antoines, tol = 0.01, maxiter = 50):
+    # key_component is the most abundant component in the FEED
+    # zk is mole fraction in the feed!
     '''
-    T: Temperature in Kelvin. Float or can be None if P specified.
-    P: Pressure in mmHg. Float or can be None if T specified.
-    alpha_bar: Average relative volatilities.
-    antoine_coeffs: Antoine coefficients for majority key.
-    P_vap: Vapor pressure of majority key as a function of T.
-    specification: Can be 'T' or 'P' strings based on what is specified.
+    P: Provide Pressure or guessed pressure in mmHg
+    T: Provide Temperature or guessed temperature in K
+    fk: Array of feed flowrate for each component
+    antoines: Array of antoine constants (A, B, C) for each component
+    zk: Array of mole fractions of each component in feed
+    key_component: Provide integer of most abundant component in feed.
+    tolerance: default is 0.01 - float
+    maxiter: maximum number of iteratiions, default is 50 - interger
     '''
+    iterations = 1
 
-    if (specification == 'T'):
-        Pressure = alpha_bar * P_vap
+    while iterations < maxiter:
+        epsilon = 0 # for bubble point flash calcualtion, epsilon (split fraction) will be 0.
+        lk = fk # liquid flowrate of component is equal to feed flowrate of component
+        zk = sum(fk)/fk
+        xk = zk # liquid mole fraction of component is equal to mole fraction of component in feed.
 
-        return (Pressure)
-    else:
-        vap_pressure = alpha_bar**(-1) * P
-        A, B, C = antoine_coeffs
-        Temperature = B/(A-np.log(vap_pressure)) - C
+        n = np.argmax(fk) # sets the index of the most abumdant component in the feed.
 
-        return (Temperature)
-    
-def calc_dew_point_flash(T: float or None, P: float or None, antoine_coeffs, P_vap, y_k, K, maj_key, specification: str):
-    '''
-    T: Temperature in Kelvin. Float or can be None if P specified.
-    P: Pressure in mmHg. Float or can be None if T specified.
-    alpha_bar: Average relative volatilities.
-    antoine_coeffs: Antoine coefficients for majority key.
-    P_vap: Vapor pressure of majority key as a function of T.
-    y_k: Array of Fraction compositions in vapor phase for each key.
-    K : Array of K values for every key.
-    maj_key: index of the majority key.
-    specification: Can be 'T' or 'P' strings based on what is specified.
-    '''
+        P_vaps = get_vapor_pressure(antoines, T)
+        K_k = P_vaps/P #get K values for all components and use it to calculate their vapor pressures
 
-    alpha_k_n = K/K[maj_key - 1]
+        alpha_k = K_k/K_k[n] # get relative volaities for each component relative to most abundant one in feed.
 
-    if (specification == 'T'):
-        Pressure = P_vap * sum(y_k/alpha_k_n)**-1
+        alpha_bar = sum(xk * alpha_k)
 
-        return (Pressure)
-    else:
-        vap_pressure = P*sum(y_k/alpha_k_n)
-        A, B, C = antoine_coeffs
-        Temperature = B/(A-np.log(vap_pressure)) - C
+        P_k_vap = alpha_bar**-1 * P
 
-        return (Temperature)
+        A,B,C = antoines[n]
+        T_calc = B/(A-np.log(P_k_vap)) - C
+        iterations += 1
+
+        if (np.abs(T_calc - T) <= tol):
+            print (f'Bubble point found at {T_calc} Kelvin after {iterations} iterations!')
+            break;
+        elif (iterations >= maxiter):
+            print('Did not converge')
+            break;
+
+        T = (T_calc + T)/2
 
 
 
@@ -280,6 +278,7 @@ if __name__ == "__main__":
     antoine_coeffs = np.array([[15.9008, 2788.51, -52.34], [16.0137, 3096.52, -53.67], [16.1156, 3395.57, -59.44]]);
 
     case1_solver(eps1, antoine_coeffs, T, P, fk, 'P', 0.01);
+    calc_bubble_point(P, 310, fk, antoine_coeffs );
     # case2_solver(eps1, antoine_coeffs, 385, 750, fk, tolerance=0.001, maxiter=100)\
     # case3_solver(phi, antoine_coeffs, 2, 390, P, fk, 'P');
 

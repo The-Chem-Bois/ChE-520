@@ -3,7 +3,7 @@ Oliver Erdmann
 20843970
 '''
 import numpy as np;
-from automated_case_solvers import case1_solver;
+from automated_case_solvers import case1_solver, calc_bubble_point;
 
 class Epsilon: # Using this class to create my Epsilon object with a value and key position (index).
     def __init__(self, value: float, position: int) -> None:
@@ -36,4 +36,7 @@ antoine_coeffs[:, 2] -= 273.15 # Convert C coefficient from C to K.
 u2 = np.array([680.72, 90.79, 1198.77, 2.421, 200, 266.71, 1.8802 ]);
 
 # Execute case 1 solver
-case1_solver(epsilon, antoine_coeffs, 313.15, Pressure, u2, specification='P', tolerance=0.06);
+# case1_solver(epsilon, antoine_coeffs, 313.15, Pressure, u2, specification='P', tolerance=0.06);
+
+#Execute bubble point solver
+calc_bubble_point(Pressure, 400, u2, antoine_coeffs, maxiter=200, tol=2)
