@@ -36,13 +36,14 @@ n = 3 #Let DEE as the key component
 
 P = 68.5*750.062 #Pressure in mmHg
 T_guess_bubble = 310 #Initial temperature guess in K; set to be slightly above the boiling point of DEE to ensure it vaporizes
-T_guess_dew = 390 #Initial temperature guess in K; set to be slightly above the melting point of DEE to ensure it vaporizes
+T_guess_dew = 310 #Initial temperature guess in K; set to be slightly above the melting point of DEE to ensure it vaporizes
+T_guess_flash = 310 #Initial temperature guess in K
 
-T_bubble = bubble_point(P, T_guess_bubble, mu, A, B, C, n, Find_T = True) #Calculate the bubble point
+T_bubble = bubble_point(P, T_guess_bubble, mu, A, B, C, Find_T = True) #Calculate the bubble point
 
-#T_dew = dew_point(P, T_guess_dew, mu, A, B, C, n, Find_T = True) #Calculate the dew point
+T_dew = dew_point(P, T_guess_dew, mu, A, B, C, Find_T = True) #Calculate the dew point
 
 eps = 0.5
 
-#c1_flash = case1_flash(eps, P, T_guess, mu, A, B, C, n)
+c1_flash = case1_flash(eps, P, T_guess_flash, mu, A, B, C, n)
 #print(c1_flash)
