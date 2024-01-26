@@ -114,6 +114,7 @@ def calc_bubble_point (P, T, fk, antoines, specification, tol = 0.01, maxiter = 
 
         elif specification == 'T':
             P_calc = alpha_bar * P_vaps[n]
+            iterations += 1
 
             if (np.abs(P_calc - P) <= tol):
                 print(f'Bubble point pressure found at {P_calc} mmHg after {iterations} iterations!')
@@ -121,6 +122,7 @@ def calc_bubble_point (P, T, fk, antoines, specification, tol = 0.01, maxiter = 
             elif (iterations >= maxiter):
                 print('Did not converge')
                 break;
+            P = (P_calc + P)/2
 
 
 
@@ -292,7 +294,7 @@ if __name__ == "__main__":
 
     # case1_solver(eps1, antoine_coeffs, T, P, fk, 'P', 0.01);
     # calc_bubble_point(P, 310, fk, antoine_coeffs );
-    calc_bubble_point(750, 390, np.array([30,50,40]), antoine_coeffs);
+    calc_bubble_point(750, 380, np.array([30,50,40]), antoine_coeffs, specification='T', tol=0.01);
     # case2_solver(eps1, antoine_coeffs, 385, 750, fk, tolerance=0.001, maxiter=100)\
     # case3_solver(phi, antoine_coeffs, 2, 390, P, fk, 'P');
 
