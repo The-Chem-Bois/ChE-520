@@ -143,18 +143,32 @@ def calc_dew_point (P, T, fk, antoines, specification, tol = 0.5, maxiter = 50 )
 
         alpha_k = K_k/K_k[n]
 
-        P_k_vap = P * sum(yk/alpha_k)
-        A,B,C = antoines[n]
-        T_calc = B/(A-np.log(P_k_vap)) - C
-        # breakpoint()
-        iterations += 1
-        if (np.abs(T_calc - T) <= tol):
-            print (f'Dew point found at {T_calc} Kelvin after {iterations} iterations!')
-            break;
-        elif (iterations >= maxiter):
-            print('Did not converge')
-            break;
-        T = (T_calc + T)/2
+        if specification == 'P':
+        
+            P_k_vap = P * sum(yk/alpha_k)
+            A,B,C = antoines[n]
+            T_calc = B/(A-np.log(P_k_vap)) - C
+            iterations += 1
+            if (np.abs(T_calc - T) <= tol):
+                print (f'Dew point found at {T_calc} Kelvin after {iterations} iterations!')
+                break;
+            elif (iterations >= maxiter):
+                print('Did not converge')
+                break;
+            T = (T_calc + T)/2
+        
+        elif specification == 'T':
+            P_calc = P_vaps[n] * (sum(yk/alpha_k)**-1)
+            iterations += 1
+
+            if (np.abs(P_calc - P) <= tol):
+                print(f'Dew point found at pressure {P_calc} mmHg after {iterations} iterations!')
+                break;
+            elif (iterations >= maxiter):
+                print('Did not converge')
+                break;
+            P = (P_calc + P)/2
+
 
 
 
@@ -307,23 +321,23 @@ def case3_solver(phi, antoine_coeffs, key_component: int, T: float, P: float, fk
     
 
 
-# if __name__ == "__main__":
+if __name__ == "__main__":
 
-#     class Epsilon:
-#         def __init__(self, value: float, position: int) -> None:
-#             self.value = value
-#             self.position = position
+    class Epsilon:
+        def __init__(self, value: float, position: int) -> None:
+            self.value = value
+            self.position = position
     
-#     #case 1 we are providing Eps_2 = 0.8 and P = 1 bar
-#     eps1 = Epsilon(0.8, 2 )
-#     P = 750 ## 1 bar = 750 mmHg
-#     T = 390 ## Initial guess
-#     fk = np.array([30, 50, 40]);
-#     phi = 0.5
-#     antoine_coeffs = np.array([[15.9008, 2788.51, -52.34], [16.0137, 3096.52, -53.67], [16.1156, 3395.57, -59.44]]);
+    #case 1 we are providing Eps_2 = 0.8 and P = 1 bar
+    eps1 = Epsilon(0.8, 2 )
+    P = 750 ## 1 bar = 750 mmHg
+    T = 390 ## Initial guess
+    fk = np.array([30, 50, 40]);
+    phi = 0.5
+    antoine_coeffs = np.array([[15.9008, 2788.51, -52.34], [16.0137, 3096.52, -53.67], [16.1156, 3395.57, -59.44]]);
 
-#     # case1_solver(eps1, antoine_coeffs, T, P, fk, 'P', 0.01);
-#     # calc_bubble_point(P, 310, fk, antoine_coeffs );
-#     calc_dew_point(750, 390, np.array([30,50,40]), antoine_coeffs, specification='T', tol=0.1, maxiter=500);
-#     # case2_solver(eps1, antoine_coeffs, 385, 750, fk, tolerance=0.001, maxiter=100)\
-#     # case3_solver(phi, antoine_coeffs, 2, 390, P, fk, 'P');
+    # case1_solver(eps1, antoine_coeffs, T, P, fk, 'P', 0.01);
+    # calc_bubble_point(P, 310, fk, antoine_coeffs );
+    calc_dew_point(750, 390, np.array([30,50,40]), antoine_coeffs, specification='T', tol=0.1, maxiter=500);
+    # case2_solver(eps1, antoine_coeffs, 385, 750, fk, tolerance=0.001, maxiter=100)\
+    # case3_solver(phi, antoine_coeffs, 2, 390, P, fk, 'P');
