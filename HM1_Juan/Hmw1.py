@@ -63,7 +63,6 @@ def bubble_point(temperature, pressure, coefficients, fk, output = None):
     iterations = 1
     tol = 0.01
     maxiter = 50
-
     while iterations < maxiter:
 
         xi_k = 0
@@ -76,18 +75,21 @@ def bubble_point(temperature, pressure, coefficients, fk, output = None):
             p_vaps = antoine(temperature, coefficients, output)
             K_k = p_vaps/pressure
             K_n = K_k[key_i]
-            K_n = K_k/K_n
 
             alpha_k = K_k/K_n
-
             alpha_avg = np.sum(x_k*alpha_k)
             bp_pressure = alpha_avg*p_vaps[key_i]
             iterations +=1
-            if (bp_pressure-pressure <= tol):
+            if ((bp_pressure-pressure) <= tol):
                 return bp_pressure
+            else:
+                pressure = (bp_pressure + pressure)/2
             
         else:
-            print("Did not converge")
+            pass
+    
+    print('Did not converge')
+    return None
     
     # elif output == T:
     #     iterations = 1

@@ -65,8 +65,6 @@ def check_P(alpha_k, alpha_bar, P_vaps, index):
      return P_calc
 
 def calc_bubble_point (P, T, fk, antoines, specification, tol = 0.01, maxiter = 50):
-    # key_component is the most abundant component in the FEED
-    # zk is mole fraction in the feed!
     '''
     P: Provide Pressure or guessed pressure in mmHg
     T: Provide Temperature or guessed temperature in K
@@ -124,6 +122,8 @@ def calc_bubble_point (P, T, fk, antoines, specification, tol = 0.01, maxiter = 
                 break;
             P = (P_calc + P)/2
 
+def calc_dew_point (P, T, fk, antoines, specification, tol = 0.5, ):
+    pass
 
 
 
@@ -140,7 +140,6 @@ def case1_solver(epsilon, antoine_coeffs, T: float, P: float, fk, specification:
     tolerance: Acceptable tolerance, default is 0.5.
     maxiter: The maximum number of iterations, default is 50.
     '''
-    # breakpoint()
 
     iterations = 1
 
@@ -294,21 +293,6 @@ if __name__ == "__main__":
 
     # case1_solver(eps1, antoine_coeffs, T, P, fk, 'P', 0.01);
     # calc_bubble_point(P, 310, fk, antoine_coeffs );
-    calc_bubble_point(750, 380, np.array([30,50,40]), antoine_coeffs, specification='T', tol=0.01);
+    calc_bubble_point(750, 390, np.array([30,50,40]), antoine_coeffs, specification='T', tol=0.01);
     # case2_solver(eps1, antoine_coeffs, 385, 750, fk, tolerance=0.001, maxiter=100)\
     # case3_solver(phi, antoine_coeffs, 2, 390, P, fk, 'P');
-
-''' 
-Questions to ask Nasser
-
-1. Do units of fk matter? Or do we only care that they are consistent with each other?
-2. Extra examples so I could verify my functions?
-3. What is fk? What is K? vapor-liquid coefficient -- (generalized correlation)
-4. Bubble point and dew point equations explanation
-5. What is V_k and L_k?
-6. !!! For case3, when calculating alpha_k_n (volatility) for each component. W.r.t. to which component am I calculating each volatility? (Choose)
-7. What are we returning for "flash calculations" ? 
-
-# F, V, L, compositions
-
-'''
