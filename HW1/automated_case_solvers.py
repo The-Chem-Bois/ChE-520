@@ -64,13 +64,14 @@ def check_P(alpha_k, alpha_bar, P_vaps, index):
 
      return P_calc
 
-def calc_bubble_point (P, T, fk, antoines, tol = 0.01, maxiter = 50):
+def calc_bubble_point (P, T, fk, antoines, specification, tol = 0.01, maxiter = 50):
     # key_component is the most abundant component in the FEED
     # zk is mole fraction in the feed!
     '''
     P: Provide Pressure or guessed pressure in mmHg
     T: Provide Temperature or guessed temperature in K
     fk: Array of feed flowrate for each component
+    specification: A string value of 'T' or 'P' indicating whether the specified parameter is temperature or pressure respectively.
     antoines: Array of antoine constants (A, B, C) for each component
     zk: Array of mole fractions of each component in feed
     key_component: Provide integer of most abundant component in feed.
@@ -82,7 +83,7 @@ def calc_bubble_point (P, T, fk, antoines, tol = 0.01, maxiter = 50):
     while iterations < maxiter:
         epsilon = 0 # for bubble point flash calcualtion, epsilon (split fraction) will be 0.
         lk = fk # liquid flowrate of component is equal to feed flowrate of component
-        zk = sum(fk)/fk
+        zk = fk/sum(fk)
         xk = zk # liquid mole fraction of component is equal to mole fraction of component in feed.
 
         n = np.argmax(fk) # sets the index of the most abumdant component in the feed.
@@ -94,20 +95,32 @@ def calc_bubble_point (P, T, fk, antoines, tol = 0.01, maxiter = 50):
 
         alpha_bar = sum(xk * alpha_k)
 
-        P_k_vap = alpha_bar**-1 * P
+        if specification == 'P':
 
-        A,B,C = antoines[n]
-        T_calc = B/(A-np.log(P_k_vap)) - C
-        iterations += 1
+            P_k_vap = alpha_bar**-1 * P
 
-        if (np.abs(T_calc - T) <= tol):
-            print (f'Bubble point found at {T_calc} Kelvin after {iterations} iterations!')
-            break;
-        elif (iterations >= maxiter):
-            print('Did not converge')
-            break;
+            A,B,C = antoines[n]
+            T_calc = B/(A-np.log(P_k_vap)) - C
+            iterations += 1
 
-        T = (T_calc + T)/2
+            if (np.abs(T_calc - T) <= tol):
+                print (f'Bubble point found at {T_calc} Kelvin after {iterations} iterations!')
+                break;
+            elif (iterations >= maxiter):
+                print('Did not converge')
+                break;
+
+            T = (T_calc + T)/2
+
+        elif specification == 'T':
+            P_calc = alpha_bar * P_vaps[n]
+
+            if (np.abs(P_calc - P) <= tol):
+                print(f'Bubble point pressure found at {P_calc} mmHg after {iterations} iterations!')
+                break;
+            elif (iterations >= maxiter):
+                print('Did not converge')
+                break;
 
 
 
@@ -277,8 +290,9 @@ if __name__ == "__main__":
     phi = 0.5
     antoine_coeffs = np.array([[15.9008, 2788.51, -52.34], [16.0137, 3096.52, -53.67], [16.1156, 3395.57, -59.44]]);
 
-    case1_solver(eps1, antoine_coeffs, T, P, fk, 'P', 0.01);
-    calc_bubble_point(P, 310, fk, antoine_coeffs );
+    # case1_solver(eps1, antoine_coeffs, T, P, fk, 'P', 0.01);
+    # calc_bubble_point(P, 310, fk, antoine_coeffs );
+    calc_bubble_point(750, 390, np.array([30,50,40]), antoine_coeffs);
     # case2_solver(eps1, antoine_coeffs, 385, 750, fk, tolerance=0.001, maxiter=100)\
     # case3_solver(phi, antoine_coeffs, 2, 390, P, fk, 'P');
 

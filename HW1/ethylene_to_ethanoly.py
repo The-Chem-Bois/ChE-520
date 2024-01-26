@@ -39,4 +39,4 @@ u2 = np.array([680.72, 90.79, 1198.77, 2.421, 200, 266.71, 1.8802 ]);
 # case1_solver(epsilon, antoine_coeffs, 313.15, Pressure, u2, specification='P', tolerance=0.06);
 
 #Execute bubble point solver
-calc_bubble_point(Pressure, 400, u2, antoine_coeffs, maxiter=200, tol=2)
+calc_bubble_point(Pressure, 310, u2, antoine_coeffs, maxiter=1000, tol=2)
