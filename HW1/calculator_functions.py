@@ -334,16 +334,17 @@ def case2_solver(epsilon, antoine_coeffs, T: float, P: float, fk, tolerance = 0.
     
 def case3_solver(phi, antoine_coeffs, key_component: int, T: float, P: float, fk, specification: str, tolerance = 0.01, maxiter = 50):
     '''
-    For a specified T and P, choose a key component n and specify its split fractions.
+    Solve flash conditions with a specified phi and T or P.
 
-    phi: An object with a guessed property value for epsilon as well as its key position (n). (properties: value, position)
-    antoine_coeffs: Array containing arrays of each key's anotine coefficients. (Order matters, requires 3 coefficients A, B, C)
-    key_component: integer of the key component.
-    T: Temperature in Kelvin.
-    P: Pressure in mmHg.
-    fk: Array of the fk value for each component in mol/s. (Order matters).
-    tolerance: Acceptable tolerance, default is 0.5.
-    maxiter: The maximum number of iterations, default is 50.
+    phi: vapor flowrate to total flowrate ratio. Float
+    antoine_coeffs: Array of antoine coefficients A,B,C for each key component.
+    key_component: Integer. Specify index + 1 of keycomponent.
+    T: Temperature, specified or guessed. In Kelvin. Float.
+    P: Pressure, specified or guessed. In mmHg. Float.
+    fk: Flow rates in feed, consistent unit. Array of flowrate for each key component.
+    specification: A string of 'P' or 'T' specifying which parameter is specified/fixed for pressure or temperature respectively.
+    tolerance: Acceptable tolerance. Float. Default is 0.01.
+    maxiter: Maximum number of iterations. Default is 50. Integer.
     -- returns --
     relative volatilities, average relative volatility, vapor pressures, split fractions, Pressure, Temperature, Vapor flowrate, liquid flowrate,
     liquid compositions, vapor compositions.
@@ -359,11 +360,11 @@ def case3_solver(phi, antoine_coeffs, key_component: int, T: float, P: float, fk
 
         if specification == 'P':
             # Running this code block if T was guessed
-            T_calc = check_T(alpha_k, alpha_bar, antoine_coeffs, majority_index)
+            T_calc = check_T(P, alpha_k, alpha_bar, antoine_coeffs, majority_index)
 
             if (np.abs(T_calc - T) <= tolerance):
                 print(f'Converged after {iterations} iterations! Epsilons of each component: {eps_n}, temperature: {T} Kelvin')
-                return (alpha_k. alpha_bar, P_vaps, eps_n, P, T, V, L, Total_Flow, x_k, y_k)
+                return (alpha_k, alpha_bar, P_vaps, eps_n, P, T, V, L, Total_Flow, x_k, y_k)
             else:
                 T = (T + T_calc)/ 2
                 iterations += 1
@@ -374,7 +375,7 @@ def case3_solver(phi, antoine_coeffs, key_component: int, T: float, P: float, fk
         
             if (np.abs(P_calc - P) <= tolerance):
                 print(f'Converged after {iterations} iterations! Epsilons of each component: {eps_n}, pressure: {P} mmHg')
-                return (alpha_k. alpha_bar, P_vaps, eps_n, P, T, V, L, Total_Flow, x_k, y_k)
+                return (alpha_k, alpha_bar, P_vaps, eps_n, P, T, V, L, Total_Flow, x_k, y_k)
             else:
                 P = (P + P_calc)/2
                 iterations += 1
@@ -382,3 +383,21 @@ def case3_solver(phi, antoine_coeffs, key_component: int, T: float, P: float, fk
         if iterations >= maxiter:
             print(f'Failed to converge')
             break;
+
+if __name__ == "__main__":
+
+    class Epsilon:
+        def __init__(self, value, position) -> None:
+            self.value = value
+            self.position = position
+    
+    eps = Epsilon(0.39, 2)
+    P = 750
+    T = 385
+
+    antoines = np.array([[15.9008, 2788.51, -52.34], [16.0137, 3096.52, -53.67], [16.1156, 3395.57, -59.44]]);
+    fk = np.array([30, 50, 40])
+
+    # case1_solver(eps, antoines, T, P, fk, 'P', 0.1, 50 )
+    # case2_solver(eps, antoines, T, P, fk, tolerance= 0.0005, maxiter=200 )
+    case3_solver(0.5, antoines, 2, T, P, fk, 'P' )
