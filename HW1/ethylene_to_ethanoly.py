@@ -3,7 +3,7 @@ Oliver Erdmann
 20843970
 '''
 import numpy as np;
-from automated_case_solvers import case1_solver, calc_bubble_point, calc_dew_point;
+from HW1.calculator_functions import case1_solver, calc_bubble_point, calc_dew_point;
 
 class Epsilon: # Using this class to create my Epsilon object with a value and key position (index).
     def __init__(self, value: float, position: int) -> None:
