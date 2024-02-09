@@ -14,7 +14,7 @@ class Epsilon: # Using this class to create my Epsilon object with a value and k
 # Define Constants
 
 Pressure = 51375 # mmHg = 68.5 bar
-epsilon = Epsilon(0.5, 4)
+epsilon = Epsilon(0.5, 4) # This is split fraction
 
 # Define our input feed and keep everything in consistent order
 # water, ethyl alcohol, ethylene, diethyl-ether, methane, propylene, isopropyl-alcohol
@@ -26,6 +26,7 @@ antoine_coeffs = np.array([
     [7.4021, 1391.4, 273.16],
     [6.61184, 389.93, 266 ],
     [6.81960, 785, 247],
+
     [6.66040, 813.055, 132.93]
 ]);
 
@@ -36,9 +37,9 @@ antoine_coeffs[:, 2] -= 273.15 # Convert C coefficient from C to K.
 u2 = np.array([680.72, 90.79, 1198.77, 2.421, 200, 266.71, 1.8802 ]);
 
 # Execute case 1 solver
-case1_solver(epsilon, antoine_coeffs, 313.15, Pressure, u2, specification='P', tolerance=0.06);
-
+flash_results = case1_solver(epsilon, antoine_coeffs, 313.15, Pressure, u2, specification='P', tolerance=0.06);
+print(flash_results)
 #Execute bubble point solver
 calc_bubble_point(Pressure, 310, u2, antoine_coeffs, specification='P')
-#Execute dew point solver
+# #Execute dew point solver
 calc_dew_point(Pressure, 390, u2, antoine_coeffs, specification='P', tol=0.1 )
