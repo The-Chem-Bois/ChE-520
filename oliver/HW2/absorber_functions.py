@@ -40,7 +40,10 @@ def Absorber(n, r,  P, T, V_n1, antoine_coeffs):
 
     bubble = calc_bubble_point(P, T, V_n1, antoines, 'P')
 
-    return (x, y, vk, lk)
+    eps_v = B_k**(-1)
+    eps_l = B_k1/B_k
+
+    return (eps_v, eps_l)
 
 if __name__ == "__main__":
 
