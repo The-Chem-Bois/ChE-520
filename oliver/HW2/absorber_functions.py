@@ -45,6 +45,38 @@ def Absorber(n, r,  P, T, V_n1, antoine_coeffs):
 
     return (eps_v, eps_l)
 
+
+def absorber_shortcut(P, T, eps, AE, antoine_coeffs):
+    '''
+    Get the split fractions for the absorber unit operation
+
+    P: Pressure in mmHg
+    T: Temperature in Kelvin
+    eps: Epsilon value with index position and value
+    AE: some parameter which needs to be specified for absorber
+    antoine_coeffs: Array of anotine coefficients for each component
+
+    '''
+    
+    p_vaps = get_vapor_pressure(antoine_coeffs, T);
+
+    K = p_vaps/P
+    n = eps.position -1
+    epsilon = r = eps.value
+
+    alpha = K/K[n]
+
+    N = np.log((r-AE)/(AE*(r-1)))/np.log(AE)
+
+    Ak = AE/(alpha)
+    Bk = (1-Ak**(N+1))/(1-Ak)
+
+    Eps_v = Bk**(-1)
+    Eps_l = 1- Eps_v
+
+    return (Eps_v, Eps_l)
+
+
 if __name__ == "__main__":
 
     pressure = 7500 # mmhg
