@@ -1,7 +1,7 @@
 #Shortcut Flash - do not know feed compositions
 
 import numpy as np
-from scipy import *
+from scipy.optimize import fsolve
 
 #Define a function to compute the vapour pressure or temperature
 def Antoine(A, B, C, T_or_P_val, Find_T = False):
@@ -346,3 +346,306 @@ def shortcut_absorber(n,P,T,A,B,C):
     epsL = 1 - epsV
     
     return(epsV,epsL)
+
+#Define a function to compute the relative volatility of each component
+def relative_volatility(P, Pvap_k, Pvap_n):
+    '''
+    Parameters
+    ----------
+    P : FLOAT
+        PRESSURE IN mmHg.
+    Pvap_k : ARRAY
+        ARRAY OF VAPOUR PRESSURES OF EACH COMPONENT IN mmHg.
+    Pvap_n : FLOAT
+        VAPOUR PRESSURE OF KEY COMPONENT IN mmHg.
+
+    Returns
+    -------
+    K_n : FLOAT
+        VOLATILITY OF THE KEY COMPONENT
+    relative_volatility_k : ARRAY
+        ARRAY OF RELATIVE VOLATILITIES OF EACH COMPONENT.
+    '''
+    
+    K_k = np.array(Pvap_k)/P #Compute K_k for each component
+    K_n = Pvap_n/P #Compute K_n for the key component
+    relative_volatility_k = K_k/K_n #Compute the relative volatility of each component
+    
+    return(K_n, relative_volatility_k)
+
+#Define a function to compute the liquid and vapor molar flowrates and composition
+def average_volatility(relative_volatility, fk, eps_n):
+    '''    
+    Parameters
+    ----------
+    relative_volatility : ARRAY
+        ARRAY OF RELATIVE VOLATILITIES OF EACH COMPONENT.
+    fk : ARRAY
+        ARRAY OF MOLAR FLOWRATES OF EACH COMPONENTS (UNITS ARE INDIFFERENT)
+    eps_n : FLOAT
+        OVERHEAD SPLIT FRACTION FOR KEY COMPONENT.
+
+    Returns
+    -------
+    avg_volatility : FLOAT
+        AVERAGE VOLATILITY OF MIXTURE
+    xk : ARRAY
+        ARRAY OF LIQUID MOLE FRACTIONS
+    yk : ARRAY
+        ARRAY OF VAPOUR MOLE FRACTIONS
+    V: FLOAT
+        TOTAL VAPOUR MOLAR FLOWRATE (UNITS ARE INDIFFERENT)
+    L: FLOAT
+        TOTAL LIQUID MOLAR FLOWRATE (UNITS ARE INDIFFERENT)
+
+    '''
+    eps_k = (np.array(relative_volatility)*eps_n)/(1+(np.array(relative_volatility)-1)*eps_n) #Compute the overhead split fraction for each component
+    
+    #Initialize the empty arrays for the vapour and liquid molar flowrates
+    vk = np.zeros(np.shape(fk))
+    lk = np.zeros(np.shape(fk))
+    
+    for i in range(len(fk)):
+        vk[i] = eps_k[i]*fk[i] #Calculate the vapour molar flowrate for each component
+        lk [i] = (1-eps_k[i])*fk[i] #Calculate the liquid molar flowrate for each component
+        
+    V = np.sum(vk) #Compute the sum of the component vapour flowrates
+    L = np.sum(lk) #Compute the sum of the component liquid flowrates
+    F = V + L #Calculate the total feed flowrate
+    
+    #Check that the mass balance is consistent with the total feed flowrate
+    #print(np.sum(fk))
+    #print(F)
+    
+    if V == 0:
+        xk = lk/L #Compute the liquid mole fractions of each component
+        yk = np.zeros(np.shape(fk))
+    
+    elif L == 0:
+        yk = vk/V #Compute the vapour mole fractions of each component
+        xk = np.zeros(np.shape(fk))
+    
+    else:
+        xk = lk/L #Compute the liquid mole fractions of each component
+        yk = vk/V #Compute the vapour mole fractions of each component
+        
+    volatility = np.zeros(np.shape(xk)) #Initialize an empty array for the product of the liquid mole fraction and relative volatility
+    
+    #Compute the product of the liquid mole fraction and relative volatility for each component
+    for j in range(len(xk)):
+        volatility[j] = xk[j]*relative_volatility[j]
+        
+    avg_volatility = np.sum(volatility) #Compute the average volatility by summing up each product
+    
+    return(avg_volatility, xk, yk, V, L)
+
+#Define a function to perform case 1 flash calculations
+def case1_flash(eps_n, T_or_P_val, T_or_P_val_init, fk, A, B, C, n, Find_T = True):
+    '''
+    
+    Parameters
+    ----------
+    eps_n : FLOAT
+        OVERHEAD SPLIT FRACTION FOR KEY COMPONENT.
+    T_or_P_val : FLOAT
+        TEMPERATURE IN K OR PRESSURE IN MMHG.
+    T_or_P_val_init : FLOAT
+        INITIAL GUESS FOR TEMPERATURE IN K OR PRESSURE IN MMHG
+    fk : ARRAY
+        ARRAY OF MOLAR FLOWRATES OF EACH COMPONENTS (UNITS ARE INDIFFERENT).
+    A : ARRAY
+        ANTOINE EQUATION PARAMETER A.
+    B : ARRAY
+        ANTOINE EQUATION PARAMETER B.
+    C : ARRAY
+        ANTOINE EQUATION PARAMETER C.
+    n : INTEGER
+        INDEX OF KEY COMPONENT. INDICES START FROM 0.
+    Find_T : BOOLEAN, optional
+        WHETHER YOU ARE SOLVING FOR TEMPERATURE OR NOT. The default is True.
+
+    Returns
+    -------
+    T_new : FLOAT
+        FINAL TEMPERATURE IN K
+    P_new : FLOAT
+        FINAL PRESSURE IN mmHg
+    xk : ARRAY
+        ARRAY OF LIQUID MOLE FRACTIONS
+    yk : ARRAY
+        ARRAY OF VAPOUR MOLE FRACTIONS
+    V: FLOAT
+        TOTAL VAPOUR MOLAR FLOWRATE (UNITS ARE INDIFFERENT)
+    L: FLOAT
+        TOTAL LIQUID MOLAR FLOWRATE (UNITS ARE INDIFFERENT)
+
+    '''
+    tol = 1e-7 #Set a tolerance for the final solution
+    iteration = 0 #Initialize a counter
+    
+    #If Find_T = True, we are given pressure and need to guess an initial temperature
+    if Find_T == True:
+        
+        P = T_or_P_val #Define the pressure from the inputs
+        T0 = T_or_P_val_init #Define the initial temperature guess from the inputs
+        #Initialize errors for average volatility and temperature
+        error_T = 1
+        error_a = 1
+        #While the errors for alpha and T are larger than the tolerance, continue to iterate
+        while (error_T > tol) and (error_a >tol):
+            iteration += 1
+            #Initialize empty vapour pressure array
+            Pvap = np.zeros(np.shape(A))
+            #Calculate the vapour pressure for each component
+            for k in range(len(Pvap)):
+                Pvap[k] = Antoine(A[k], B[k], C[k], T0)
+            
+            rv = relative_volatility(P,Pvap,Pvap[n])
+            Kn = rv[0] #Compute the K value for the key component 
+            alpha = rv[1] #Compute the relative volatility array for all components
+            
+            av = average_volatility(alpha,fk,eps_n) 
+            avg_alpha_act = av[0] #Compute average volatility
+            xk = av[1] #Compute liquid mole fractions for each component
+            yk = av[2] #Compute vapour mole fractions for each component
+            V = av[3] #Compute total vapour molar flowrate
+            L = av[4] #Compute total liquid molar flowrate
+            avg_alpha_theor = 1/Kn #Calculate expected average volatility
+            
+            x_ind = np.argmax(xk) #Determine component with maximum liquid composition
+            
+            Pvl = (alpha[x_ind]/avg_alpha_act)*P #Calculate new vapour pressure of said component
+            T_new = (B[x_ind]/(A[x_ind]-np.log(Pvl)))-C[x_ind] #Calculate new temperature for the specified vapour pressure
+                    
+            error_T = abs(T0 - T_new) #Calculate the absolute error between the temperatures
+            
+            error_a = abs(avg_alpha_act - avg_alpha_theor) #Calculate the absolute error between the average volatilities
+            
+            T0 = T_new #Set the initial guess equal to the calculated temperature
+            
+        print("After",iteration,"iterations, the temperature has converged to", T_new, "K.")    
+        return(T_new, xk, yk, V, L)
+    
+    #If Find_T = False, we are given temperature and need to guess an initial pressure
+    elif Find_T == False:
+        
+        T = T_or_P_val #Define the temperature from the inputs
+        P0 = T_or_P_val_init #Define the initial pressure guess from the inputs
+        
+        #Initialize errors for average volatility and pressure
+        error_P = 1
+        error_a = 1
+        
+        #Initialize empty vapour pressure array
+        Pvap = np.zeros(np.shape(A))
+        #Calculate the vapour pressure for each component
+        for k in range(len(Pvap)):
+            Pvap[k] = Antoine(A[k], B[k], C[k], T)
+            
+        #While the errors for alpha and P are larger than the tolerance, continue to iterate
+        while (error_P > tol) and (error_a > tol):
+            iteration += 1
+            
+            rv = relative_volatility(P0,Pvap,Pvap[n])
+            Kn = rv[0] #Compute the K value for the key component 
+            alpha = rv[1] #Compute the relative volatility array for all components
+            
+            av = average_volatility(alpha,fk,eps_n) 
+            avg_alpha_act = av[0] #Compute average volatility
+            xk = av[1] #Compute liquid mole fractions for each component
+            yk = av[2] #Compute vapour mole fractions for each component
+            V = av[3] #Compute total vapour molar flowrate
+            L = av[4] #Compute total liquid molar flowrate
+            avg_alpha_theor = 1/Kn #Calculate expected average volatility
+            
+            x_ind = np.argmax(xk) #Determine component with maximum liquid composition
+            
+            P_new = (avg_alpha_act/alpha[x_ind])*Pvap[x_ind] #Calculate new  pressure of said component
+                    
+            error_P = abs(P0 - P_new) #Calculate the absolute error between the pressures
+            
+            error_a = abs(avg_alpha_act - avg_alpha_theor)
+            
+            P0 = P_new #Set the initial guess equal to the calculated pressure
+            
+        print("After",iteration,"iterations, the pressure has converged to", P_new, "mmHg.")    
+        return(P_new, xk, yk, V, L)
+    else:
+        return("Invalid input")
+
+def absorber(VN1,P,Tsolvent,A,B,C,n):
+    r = 0.99
+    Ae = 1.4
+
+    Pvap = np.zeros(np.shape(A))
+        
+    #Calculate the vapour pressure for each component
+    for k in range(len(Pvap)):
+        Pvap[k] = np.exp(A[k]-(B[k]/(C[k]+Tsolvent)))
+       
+    K = Pvap/P #Compute relative volatility of each component
+        
+    alpha = K/K[n] #Compute relative volatility of each component
+        
+    #Calculate L0
+    L0 = np.zeros(np.shape(Pvap))
+    
+    for l in range(len(Pvap)):
+        L0[l] = Ae*VN1[l]*(Pvap[n]/P)
+    
+    #Calculate number of stages from Kremser equation
+    N = np.log((r*VN1[n] + L0[n] - Ae*VN1[n])/(L0[n]-Ae*(1-r)*VN1[n]))/np.log(Ae)
+    
+    V1 = np.zeros(np.shape(Pvap))
+    LN = np.zeros(np.shape(Pvap))
+    epsV = np.zeros(np.shape(Pvap))
+    epsL = np.zeros(np.shape(Pvap))
+    
+    for i in range(len(Pvap)):
+        Ak = Ae/alpha[i]
+        betaN = (1-Ak**(N+1))/(1-Ak)
+        betaN1 = (1-Ak**(N))/(1-Ak)
+        V1[i] = (VN1[i]/betaN)+(betaN1/betaN)*L0[i]
+        LN[i] = (1-(betaN1/betaN)*L0[i] + (1- (1/betaN))*VN1[i])
+        epsV[i] = 1/betaN
+        epsL[i] = betaN1/betaN
+        
+    xN = LN/np.sum(LN)
+    y1 = V1/np.sum(V1)
+    
+    T = bubble_point(P, Tsolvent, VN1, A, B, C, Find_T = True)
+
+    return(N, L0, V1, LN, xN, y1, T)
+
+def distillation(Sin,Tin, Pin, LK, HK, A, B, C):
+    
+    epsLK = LK[1]
+    epsHK = HK[1]
+    
+    alphaLKHK = (epsLK/(1-epsLK))/(epsHK/(1-epsHK))
+    #Fenske equation
+    Nm = np.log((epsLK*(1-epsHK))/(epsHK*(1-epsLK)))/np.log(alphaLKHK)
+    
+    Pvap = np.zeros(np.shape(A))
+    #Calculate the vapour pressure for each component
+    for k in range(len(Pvap)):
+        Pvap[k] = np.exp(A[k]-(B[k]/(C[k]+Tin)))
+       
+    K = Pvap/Pin #Compute relative volatility of each component
+        
+    alpha = K/K[HK[0]] #Compute relative volatility of each component
+    
+    eps = np.zeros(np.shape(Pvap))
+    bot = np.zeros(np.shape(Pvap)) 
+    dist = np.zeros(np.shape(Pvap)) 
+    for i in range(len(Pvap)):
+        eps[i] = ((alpha[i]**Nm)*epsHK)/(1+(alpha[i]**Nm - 1)*epsHK)
+        bot[i] = (1-eps[i])*Sin[i]
+        dist[i] = eps[i]*Sin[i]
+    
+    Tcond = bubble_point(Pin,Tin,dist,A,B,C,Find_T = True)
+    Tdist = dew_point(Pin,Tin,dist,A,B,C,Find_T = True)
+    Treboil = bubble_point(Pin,Tin,bot,A,B,C,Find_T = True)
+    Tbot = dew_point(Pin,Tin,bot,A,B,C,Find_T = True)
+    
+    return(bot, dist, Tcond, Treboil, Tdist, Tbot, Nm)
