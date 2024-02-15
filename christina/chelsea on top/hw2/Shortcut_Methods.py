@@ -256,7 +256,6 @@ def dew_point(T_or_P_val, T_or_P_val_init, fk, A, B, C, Find_T = False):
 def shortcut_flash(P,T,A,B,C,epsn,n):
     '''
     
-
     Parameters
     ----------
     P : FLOAT
@@ -573,9 +572,47 @@ def case1_flash(eps_n, T_or_P_val, T_or_P_val_init, fk, A, B, C, n, Find_T = Tru
     else:
         return("Invalid input")
 
+#Define a function to perform absorber calculations
 def absorber(VN1,P,Tsolvent,A,B,C,n):
-    r = 0.99
-    Ae = 1.4
+    '''
+    
+    Parameters
+    ----------
+    VN1 : ARRAY
+        MOLAR FLOWRATES OF STREAM 31.
+    P : FLOAT
+        PRESSURE IN MMHG.
+    Tsolvent : FLOAT
+        TEMPERATURE IN K.
+    A : ARRAY
+        ANTOINE EQUATION PARAMETER A.
+    B : ARRAY
+        ANTOINE EQUATION PARAMETER B.
+    C : ARRAY
+        ANTOINE EQUATION PARAMETER C.
+    n : INTEGER
+        INDEX OF KEY COMPONENT. INDICES START FROM 0.
+
+    Returns
+    -------
+    N : INTEGER
+        NUMBER OF STAGES IN ABSORBER
+    L0 : ARRAY
+        MOLAR FLOWRATES OF EACH COMPONENT IN STREAM 03
+    V1 : ARRAY
+        MOLAR FLOWRATES OF EACH COMPONENT IN STREAM 41
+    LN : ARRAY
+        MOLAR FLOWRATES OF EACH COMPONENT IN STREAM 42
+    xN : ARRAY
+        LIQUID MOLE FRACTION IN STREAM 42
+    y1 : ARRAY
+        VAPOUR MOLE FRACTION IN STREAM 41.
+    T : FLOAT
+        BUBBLE POINT TEMPERATURE IN K.
+
+    '''
+    r = 0.99 #Fixed recovery in absorption
+    Ae = 1.4 #Absorption factor
 
     Pvap = np.zeros(np.shape(A))
         
@@ -601,6 +638,7 @@ def absorber(VN1,P,Tsolvent,A,B,C,n):
     epsV = np.zeros(np.shape(Pvap))
     epsL = np.zeros(np.shape(Pvap))
     
+    #Compute the molar flowrates in streams 41 and 42 as well as their respective split fractions
     for i in range(len(Pvap)):
         Ak = Ae/alpha[i]
         betaN = (1-Ak**(N+1))/(1-Ak)
@@ -610,19 +648,62 @@ def absorber(VN1,P,Tsolvent,A,B,C,n):
         epsV[i] = 1/betaN
         epsL[i] = betaN1/betaN
         
+    #Compute the mole fractions in streams 41 and 42
     xN = LN/np.sum(LN)
     y1 = V1/np.sum(V1)
     
-    T = bubble_point(P, Tsolvent, VN1, A, B, C, Find_T = True)
+    T = bubble_point(P, Tsolvent, VN1, A, B, C, Find_T = True) #Calculate the bubble point temperature of the absorber
 
     return(N, L0, V1, LN, xN, y1, T)
 
+#Define a function to perform distillation calculations
 def distillation(Sin,Tin, Pin, LK, HK, A, B, C):
-    
-    epsLK = LK[1]
+    '''
+
+    Parameters
+    ----------
+    Sin : ARRAY
+        FEED MOLAR FLOWRATES.
+    Tin : FLOAT
+        TEMPERATURE IN K.
+    Pin : FLOAT
+        PRESSURE IN MMHG.
+    LK : TUPLE
+        INDEX AND SPLIT FRACTION OF LIGHT KEY
+    HK : TUPLE
+        INDEX AND SPLIT FRACTION OF HEAVY KEY
+    A : ARRAY
+        ANTOINE EQUATION PARAMETER A.
+    B : ARRAY
+        ANTOINE EQUATION PARAMETER B.
+    C : ARRAY
+        ANTOINE EQUATION PARAMETER C.
+
+    Returns
+    -------
+    bot : ARRAY
+          MOLAR FLOWRATES OF BOTTOM STREAM
+    dist: ARRAY
+          MOLAR FLOWRATES OF DISTILLATE STREAM
+    Tcond : FLOAT
+            BUBBLE POINT TEMPERATURE OF DISTILLATE STREAM
+    Treboil: FLOAT
+            BUBBLE POINT TEMPERATURE OF BOTTOM STREAM
+    Tdist : FLOAT
+            DEW POINT TEMPERATURE OF DISTILLATE STREAM
+    Tbot : FLOAT
+           DEW POINT TEMPERATURE OF BOTTOM STREAM
+    Nm : INTEGER
+         MINIMUM NUMBER OF STAGES IN COLUMN
+
+    '''
+    #Define variables for the indices of LK and HK
+    epsLK = LK[1] 
     epsHK = HK[1]
     
+    #Compute the relative volatility with respect to LK and HK
     alphaLKHK = (epsLK/(1-epsLK))/(epsHK/(1-epsHK))
+    
     #Fenske equation
     Nm = np.log((epsLK*(1-epsHK))/(epsHK*(1-epsLK)))/np.log(alphaLKHK)
     
@@ -638,11 +719,13 @@ def distillation(Sin,Tin, Pin, LK, HK, A, B, C):
     eps = np.zeros(np.shape(Pvap))
     bot = np.zeros(np.shape(Pvap)) 
     dist = np.zeros(np.shape(Pvap)) 
+    #Compute the split fractions as well as bottom and distillate molar flowrates
     for i in range(len(Pvap)):
         eps[i] = ((alpha[i]**Nm)*epsHK)/(1+(alpha[i]**Nm - 1)*epsHK)
         bot[i] = (1-eps[i])*Sin[i]
         dist[i] = eps[i]*Sin[i]
     
+    #Compute the temperatures of each stream and the condenser and reboiler
     Tcond = bubble_point(Pin,Tin,dist,A,B,C,Find_T = True)
     Tdist = dew_point(Pin,Tin,dist,A,B,C,Find_T = True)
     Treboil = bubble_point(Pin,Tin,bot,A,B,C,Find_T = True)
