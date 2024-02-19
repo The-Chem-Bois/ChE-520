@@ -1,4 +1,4 @@
-from calculator_functions import case1_solver
+from calculator_functions import case1_solver, calc_bubble_point
 from shortcut_flash import shortcut_flash
 from absorber_functions import absorber_shortcut
 import numpy as np
@@ -55,4 +55,5 @@ print('W, EA, ET, DEE')
 epsilon = Epsilon(0.5, 4)
 fk_1 = np.array([766.2, 96.29, 1277, 60.50])
 
-case1_solver(epsilon, antoine_coeffs, 390, 68.5, fk_1, 'P' )
+case1_solver(epsilon, antoine_coeffs, 390, 51379.22, fk_1, 'P' )
+calc_bubble_point(51379.22, 350, fk_1, antoine_coeffs, 'P')

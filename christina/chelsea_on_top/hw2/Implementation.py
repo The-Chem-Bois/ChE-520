@@ -155,39 +155,39 @@ mass_DEE = np.array([mu1d,mu2d,mu31d,mu32d,mu41d,mu42d,mu51d,mu52d,mu6d,mu71d, m
 mu2 = np.array([mu2w,mu2ea,mu2el,mu2d])
 #mu31_OLD= np.array([mu31w,mu31ea,mu31el,mu31d]) 
 #mu32_OLD= np.array([mu32w,mu32ea,mu32el,mu32d])
-breakpoint()
+# breakpoint()
 flash1 = case1_flash(0.5,68.5*750,393, mu2, A,B,C, 2)
 mu31 = flash1[2]*flash1[3]
 mu32 = flash1[1]*flash1[4]
-#print(mu31,mu32)
+# print(mu31,mu32)
 
-# #Stream 03, 41, 42
-# absorber1 = absorber(mu31,68.5*750, 300,A,B,C,2)
-# mu03 = absorber1[1]
-# mu41 = absorber1[2]
-# mu42 = absorber1[3]
-# #print(mu03, mu41, mu42)
+#Stream 03, 41, 42
+absorber1 = absorber(mu31,68.5*750, 300,A,B,C,2)
+mu03 = absorber1[1]
+mu41 = absorber1[2]
+mu42 = absorber1[3]
+#print(mu03, mu41, mu42)
 
-# #Stream 6
-# mu6 = mu32+mu42
-# T6 = bubble_point(68.5*750, 350, mu6, A, B, C, Find_T=True)
+#Stream 6
+mu6 = mu32+mu42
+T6 = bubble_point(68.5*750, 350, mu6, A, B, C, Find_T=True)
 
-# #Stream 71 and 72
-# distillation1 = distillation(mu6,T6,20*750,(1,0.995),(0,0.005),A,B,C)
-# mu71 = distillation1[1]
-# mu72 = distillation1[0]
-# Tdist1 = distillation1[4]
-# #print(mu71,mu72)
+#Stream 71 and 72
+distillation1 = distillation(mu6,T6,20*750,(1,0.995),(0,0.005),A,B,C)
+mu71 = distillation1[1]
+mu72 = distillation1[0]
+Tdist1 = distillation1[4]
+#print(mu71,mu72)
 
-# #Stream 81 and 82
-# distillation2 = distillation(mu71,Tdist1,10*750,(3,0.995),(1,0.005),A,B,C)
-# mu81 = distillation2[1]
-# mu82 = distillation2[0]
-# Tbot2 = distillation2[5]
-# #print(mu81,mu82)
+#Stream 81 and 82
+distillation2 = distillation(mu71,Tdist1,10*750,(3,0.995),(1,0.005),A,B,C)
+mu81 = distillation2[1]
+mu82 = distillation2[0]
+Tbot2 = distillation2[5]
+#print(mu81,mu82)
 
-# #Stream 91 and 92
-# distillation3 = distillation(mu82,Tbot2,1*750,(1,0.995),(2,0.005),A,B,C)
-# mu91 = distillation3[1]
-# mu92 = distillation3[0]
-# #print(mu91,mu92)
+#Stream 91 and 92
+distillation3 = distillation(mu82,Tbot2,1*750,(1,0.995),(2,0.005),A,B,C)
+mu91 = distillation3[1]
+mu92 = distillation3[0]
+#print(mu91,mu92)
