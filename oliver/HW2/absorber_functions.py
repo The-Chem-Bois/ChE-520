@@ -57,20 +57,21 @@ def absorber_shortcut(P, T, eps, AE, antoine_coeffs):
     antoine_coeffs: Array of anotine coefficients for each component
 
     '''
-    
+    #Get vapor pressures using Antoine's equation for each component
     p_vaps = get_vapor_pressure(antoine_coeffs, T);
-
+    #Calculate K, specify postion, and specify r
     K = p_vaps/P
     n = eps.position -1
     epsilon = r = eps.value
 
+    #Calculate relative volatility
     alpha = K/K[n]
-
+    # Calculate N number of stages via Kremser Equation
     N = np.log((r-AE)/(AE*(r-1)))/np.log(AE)
 
     Ak = AE/(alpha)
     Bk = (1-Ak**(N+1))/(1-Ak)
-
+    # Find the split fractions in the vapor and liquid phase
     Eps_v = Bk**(-1)
     Eps_l = 1- Eps_v
 

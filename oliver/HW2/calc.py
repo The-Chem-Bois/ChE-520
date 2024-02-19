@@ -45,9 +45,14 @@ antoine_coeffs = np.array(
 antoine_coeffs[:, :2] *= np.log(10) # Convert A, B from log base 10 to log base e.
 antoine_coeffs[:, 2] -= 273.15 # Convert C coefficient from C to K.
 # fk = np.array([50.88, 6.72, 89.28, 4.44])
-
+print('W, EA, ET, DEE')
+# print(1- shortcut_flash(51379.22, 310, antoine_coeffs, epsilon))
 # print(shortcut_flash(51379.22, 310, antoine_coeffs, epsilon))
 
-epsilon = Epsilon(0.99, 2)
-print(absorber_shortcut(51004.2, 310, epsilon, 10, antoine_coeffs))
+# epsilon = Epsilon(0.99, 2)
+# print(absorber_shortcut(51004.2, 310, epsilon, 10, antoine_coeffs))
 
+epsilon = Epsilon(0.5, 4)
+fk_1 = np.array([766.2, 96.29, 1277, 60.50])
+
+case1_solver(epsilon, antoine_coeffs, 390, 68.5, fk_1, 'P' )
