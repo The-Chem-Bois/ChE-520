@@ -631,8 +631,8 @@ def absorber(VN1,P,Tsolvent,A,B,C,n):
         L0[l] = Ae*VN1[l]*(Pvap[n]/P)
     
     #Calculate number of stages from Kremser equation
-    N = np.log((r*VN1[n] + L0[n] - Ae*VN1[n])/(L0[n]-Ae*(1-r)*VN1[n]))/np.log(Ae)
-    
+    #N = np.log((r*VN1[n] + L0[n] - Ae*VN1[n])/(L0[n]-Ae*(1-r)*VN1[n]))/np.log(Ae)
+    N = np.log((r-Ae)/(Ae*(r-1)))/np.log(Ae)
     V1 = np.zeros(np.shape(Pvap))
     LN = np.zeros(np.shape(Pvap))
     epsV = np.zeros(np.shape(Pvap))
@@ -645,16 +645,15 @@ def absorber(VN1,P,Tsolvent,A,B,C,n):
         betaN1 = (1-Ak**(N))/(1-Ak)
         V1[i] = (VN1[i]/betaN)+(betaN1/betaN)*L0[i]
         LN[i] = (1-(betaN1/betaN)*L0[i] + (1- (1/betaN))*VN1[i])
-        epsV[i] = 1/betaN
-        epsL[i] = betaN1/betaN
-        
+                
     #Compute the mole fractions in streams 41 and 42
     xN = LN/np.sum(LN)
     y1 = V1/np.sum(V1)
     
-    T = bubble_point(P, Tsolvent, VN1, A, B, C, Find_T = True) #Calculate the bubble point temperature of the absorber
+    Tliq = bubble_point(P, Tsolvent, LN, A, B, C, Find_T = True) #Calculate the bubble point temperature of the absorber
+    Tvap = dew_point(P, Tsolvent, V1, A, B, C, Find_T = True) #Calculate the dew point temperature of the absorber
 
-    return(N, L0, V1, LN, xN, y1, T)
+    return(N, L0, V1, LN, xN, y1, Tliq, Tvap)
 
 #Define a function to perform distillation calculations
 def distillation(Sin,Tin, Pin, LK, HK, A, B, C):
