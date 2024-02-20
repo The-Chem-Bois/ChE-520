@@ -612,7 +612,7 @@ def absorber(VN1,P,Tsolvent,A,B,C,n):
 
     '''
     r = 0.99 #Fixed recovery in absorption
-    Ae = 1.4 #Absorption factor
+    Ae = 2.5 #Absorption factor
 
     Pvap = np.zeros(np.shape(A))
         
@@ -626,26 +626,26 @@ def absorber(VN1,P,Tsolvent,A,B,C,n):
         
     #Calculate L0
     L0 = np.zeros(np.shape(Pvap))
-    
-    for l in range(len(Pvap)):
-        L0[l] = Ae*VN1[l]*(Pvap[n]/P)
+    L0[0]= Ae*np.sum(VN1)*(Pvap[n]/P)
     
     #Calculate number of stages from Kremser equation
     #N = np.log((r*VN1[n] + L0[n] - Ae*VN1[n])/(L0[n]-Ae*(1-r)*VN1[n]))/np.log(Ae)
     N = np.log((r-Ae)/(Ae*(r-1)))/np.log(Ae)
     V1 = np.zeros(np.shape(Pvap))
     LN = np.zeros(np.shape(Pvap))
-    epsV = np.zeros(np.shape(Pvap))
-    epsL = np.zeros(np.shape(Pvap))
     
     #Compute the molar flowrates in streams 41 and 42 as well as their respective split fractions
     for i in range(len(Pvap)):
         Ak = Ae/alpha[i]
         betaN = (1-Ak**(N+1))/(1-Ak)
         betaN1 = (1-Ak**(N))/(1-Ak)
-        V1[i] = (VN1[i]/betaN)+(betaN1/betaN)*L0[i]
-        LN[i] = (1-(betaN1/betaN)*L0[i] + (1- (1/betaN))*VN1[i])
-                
+        epsV = 1/betaN
+        epsL = 1 - epsV
+        #V1[i] = (VN1[i]/betaN)+(betaN1/betaN)*L0
+        #LN[i] = (1-(betaN1/betaN)*L0 + (1- (1/betaN))*VN1[i])
+        V1[i] = epsV*VN1[i] + epsL*L0[i]
+        LN[i] = (1-epsV)*VN1[i] + (1-epsL)*L0[i]
+        
     #Compute the mole fractions in streams 41 and 42
     xN = LN/np.sum(LN)
     y1 = V1/np.sum(V1)
