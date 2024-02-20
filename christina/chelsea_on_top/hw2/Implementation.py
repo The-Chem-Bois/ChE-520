@@ -151,36 +151,37 @@ mass_DEE = np.array([mu1d,mu2d,mu31d,mu32d,mu41d,mu42d,mu51d,mu52d,mu6d,mu71d, m
 #Stream 1
 mu1 = np.array([mu1w,mu1ea,mu1el,mu1d])
 T1 = bubble_point(750,300,mu1,A,B,C,Find_T=True)
+#print(mu1, T1)
 
 #Stream 31 and 32
 mu2 = np.array([mu2w,mu2ea,mu2el,mu2d])
-#mu31_OLD= np.array([mu31w,mu31ea,mu31el,mu31d]) 
-#mu32_OLD= np.array([mu32w,mu32ea,mu32el,mu32d]) 
-flash1 = case1_flash(0.5,68.5*750,393, mu2, A,B,C, 2)
+mu31_OLD= np.array([mu31w,mu31ea,mu31el,mu31d]) 
+mu32_OLD= np.array([mu32w,mu32ea,mu32el,mu32d]) 
+flash1 = case1_flash(eps_flash,68.5*750,393, mu2, A,B,C, 2)
 mu31 = flash1[2]*flash1[3]
 mu32 = flash1[1]*flash1[4]
 
-#print(mu31,mu32)
+#print(mu2,mu31_OLD,mu32_OLD)
 
 #Stream 03, 41, 42
-absorber1 = absorber(mu31,68.5*750, 300,A,B,C,3)
+absorber1 = absorber(mu31_OLD,68.5*750, 300,A,B,C,3)
 mu03 = absorber1[1]
 mu41 = absorber1[2]
 mu42 = absorber1[3]
-
-#print(mu03, mu41, mu42)
+#mu03 = mu41[0]+mu42[0]-mu31[0]
+print(mu03, mu41, mu42)
 
 #Stream 6
 mu6 = mu32+mu42
 T6 = bubble_point(68.5*750, 350, mu6, A, B, C, Find_T=True)
-#print(mu6,T6)
+print(mu6,T6)
 #Stream 71 and 72
 distillation1 = distillation(mu6,T6,20*750,(1,0.995),(0,0.005),A,B,C)
 mu71 = distillation1[1]
 mu72 = distillation1[0]
 Tdist1 = distillation1[4]
 Tbot1 = distillation1[5]
-#print(mu71,mu72, Tdist1, Tbot1)
+print(mu71,mu72, Tdist1, Tbot1)
 
 #Stream 81 and 82
 distillation2 = distillation(mu71,Tdist1,10*750,(3,0.995),(1,0.005),A,B,C)
