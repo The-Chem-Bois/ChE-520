@@ -1,6 +1,6 @@
-from calculator_functions import case1_solver, calc_bubble_point
+from calculator_functions import case1_solver, calc_bubble_point, calc_dew_point
 from shortcut_flash import shortcut_flash
-from absorber_functions import absorber_shortcut
+from absorber_functions import absorber_shortcut, Absorber
 import numpy as np
 # Reactor
 
@@ -57,3 +57,18 @@ fk_1 = np.array([766.2, 96.29, 1277, 60.50])
 
 case1_solver(epsilon, antoine_coeffs, 390, 51379.22, fk_1, 'P' )
 calc_bubble_point(51379.22, 350, fk_1, antoine_coeffs, 'P')
+# calc_dew_point(51379.22, 350, fk_1, antoine_coeffs, 'P', 0.5, 200)
+
+#calculate absorber
+u31 = np.array([44.49, 11.55, 1257.845, 1.21])
+absorber_results = Absorber(3, 0.979, 68*750, 310, u31, antoine_coeffs, 1.4 )
+
+u42 = absorber_results[2]
+calc_bubble_point(68*750, 310, u42, antoine_coeffs, 'P', 0.01, 200)
+print('L0 flows of absorber', absorber_results[0])
+print('mu41 of absorber (vap out)', absorber_results[1])
+print('mu42 of absorber (liq out)', absorber_results[2])
+
+#calculate mixer exit temperature
+# u6 = np.array([])
+# calc_bubble_point(51379.22, 350, )
