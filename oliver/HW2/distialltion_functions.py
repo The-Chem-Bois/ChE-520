@@ -41,5 +41,7 @@ def distillation_column(fk, T_in, P_in, eps_lk, eps_hk, antoine_coeffs, eps, P_c
     calc_dew_point(P_reb, T_in, bottoms, antoine_coeffs, 'P')
 
     print(f'{N} number of stages')
+    print(f'tops: {tops}')
+    print(f'bottoms: {bottoms}')
 
-    return (N)
+    return (N, tops, bottoms)

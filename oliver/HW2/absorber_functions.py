@@ -33,10 +33,6 @@ def Absorber(n, r,  P, T, V_n1, antoine_coeffs, Ae):
     B_kN = (1-A_k**(N+1))/(1-A_k)
     B_kN1 = (1-A_k**(N))/(1-A_k)
 
-    # B_k = (1-A_k**(N))/(1-A_k)
-
-    # calc_bubble_point(P, T, V_n1, antoine_coeffs, 'P')
-
     eps_v = B_kN**(-1)
     eps_l = (B_kN1)/B_kN
 
