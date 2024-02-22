@@ -137,7 +137,6 @@ def calc_bubble_point (P, T, fk, antoines, specification, tol = 0.01, maxiter = 
         K_k = P_vaps/P #get K values for all components and use it to calculate their vapor pressures
 
         alpha_k = K_k/K_k[n] # get relative volaities for each component relative to most abundant one in feed.
-
         alpha_bar = sum(xk * alpha_k) # calculates average volatility here
 
         if specification == 'P':

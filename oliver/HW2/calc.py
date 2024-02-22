@@ -1,6 +1,7 @@
 from calculator_functions import case1_solver, calc_bubble_point, calc_dew_point
 from shortcut_flash import shortcut_flash
-from absorber_functions import absorber_shortcut, Absorber
+from absorber_functions import absorber_shortcut, Absorber, absorber_bubble_point
+from distialltion_functions import distillation_column
 import numpy as np
 # Reactor
 
@@ -57,18 +58,24 @@ fk_1 = np.array([766.2, 96.29, 1277, 60.50])
 
 case1_solver(epsilon, antoine_coeffs, 390, 51379.22, fk_1, 'P' )
 calc_bubble_point(51379.22, 350, fk_1, antoine_coeffs, 'P')
-# calc_dew_point(51379.22, 350, fk_1, antoine_coeffs, 'P', 0.5, 200)
 
 #calculate absorber
 u31 = np.array([44.49, 11.55, 1257.845, 1.21])
 absorber_results = Absorber(3, 0.979, 68*750, 310, u31, antoine_coeffs, 1.4 )
 
 u42 = absorber_results[2]
-calc_bubble_point(68*750, 310, u42, antoine_coeffs, 'P', 0.01, 200)
+absorber_bubble_point(68*750, 340, antoine_coeffs, absorber_results[2], 0, 3)
+calc_dew_point(68*750, 340, absorber_results[1], antoine_coeffs, 'P')
 print('L0 flows of absorber', absorber_results[0])
 print('mu41 of absorber (vap out)', absorber_results[1])
 print('mu42 of absorber (liq out)', absorber_results[2])
 
 #calculate mixer exit temperature
-# u6 = np.array([])
-# calc_bubble_point(51379.22, 350, )
+u6 = np.array([852.27, 84.74, 38, 2.132])
+
+calc_bubble_point(750*68, 350, u6, antoine_coeffs, 'P' )
+
+#first distillation column (de-watering)
+eps_lk = Epsilon(0.995, 1)
+eps_hk = Epsilon(0.9, 0)
+distillation_column(u6, 528, 68*750, eps_lk, eps_hk, antoine_coeffs, np.array([0.1, 0.995, 1, 1]), 17.56 * 750, 18.06 * 750)
