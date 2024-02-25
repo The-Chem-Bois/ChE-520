@@ -4,7 +4,6 @@ ID: 20765671
 '''
 import operators as op
 import numpy as np
-import math
 
 
 #Shortcut Method to find Split Fractions in the Flash Unit
@@ -80,6 +79,6 @@ if __name__ == "__main__":
     print("Order: W, EA, EL, DEE")
     # print(short_flash(51379.22, 310, antoine_coeffs, 0.5, 4))
     # print(short_absorber(51004.2, 310, antoine_coeffs, 0.99, 2, 10))
-    u31 = np.array([44.49, 11.55, 1257.845, 1.21])
-    print(full_absorber(310, 51004.2, antoine_coeffs, 0.979, 4,1.4,u31))
+    # u31 = np.array([44.49, 11.55, 1257.845, 1.21])
+    # print(full_absorber(310, 51004.2, antoine_coeffs, 0.979, 4,1.4,u31))
 
