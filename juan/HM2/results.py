@@ -76,7 +76,7 @@ u82 = np.array([[75.51, 95.52, 0, 0.0023]])
 print(op.dew_point(318.3, 8400.69, antoine_coeffs, u82, "T" ))
 
 #Calculates the finishing column bubble point, and dewpoints using the vapor stream u91 and liquid stream u92
-print("Dewatering Column Calculations")
+print("Finishing Column Calculations")
 u91 = np.array([[13.78, 95.04, 0, 0.0023]])
 u92 = np.array([[61.73, 0.48, 0, 0]])
 print(op.bubble_point(310, 750.062, antoine_coeffs, u91, "T" ))
