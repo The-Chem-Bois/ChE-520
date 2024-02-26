@@ -25,7 +25,7 @@ antoine_coeffs = np.array(
 antoine_coeffs[:, :2] *= np.log(10) # Convert A, B from log base 10 to log base e.
 antoine_coeffs[:, 2] -= 273.15 # Convert C coefficient from C to K.
 
-print('W, EA, ET, DEE')
+print('W, EA, ET, DEE') # Order of components that will come back in the arrays. Printed for reference in console.
 # Define split fraction for diethyl-ether
 epsilon = Epsilon(0.5, 4)
 

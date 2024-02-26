@@ -15,7 +15,9 @@ def distillation_column(fk, T_in, P_in, eps_lk, eps_hk, antoine_coeffs, eps, P_c
     P_cond: Pressure of total condensor in mmHg: FLOAT
     P_reb: Pressure of reboiler in mmHg: FLOAT
     --- RETURNS ---
-
+    N - number of columns
+    top - array of top flowrates
+    bottom - array of bottom flowrates
     '''
     # get indicies of heavy key and light key
     n_hk = eps_hk.position

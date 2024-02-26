@@ -15,6 +15,14 @@ def Absorber(n, r,  P, T, V_n1, antoine_coeffs, Ae):
     T: Solvent temperature
     V_n1: Bottom flow rates in the absorber of each component.
     antoine_coeffs: Includes parameter A, B, and C for all keycomponents.
+
+    Returns
+    L0 - Top liquid stream
+    V1 - Exiting top vapor streams
+    LN - Exiting Bottom liquid streams
+    N - Number of stages in absorber
+    eps_v - vapor split fractions
+    eps_l - liquid split fractions
     '''
     p_vap = get_vapor_pressure(antoine_coeffs, T)
 
@@ -32,7 +40,7 @@ def Absorber(n, r,  P, T, V_n1, antoine_coeffs, Ae):
     A_k = Ae/alpha
     B_kN = (1-A_k**(N+1))/(1-A_k)
     B_kN1 = (1-A_k**(N))/(1-A_k)
-
+    # Calculate split fractions and exiting streams
     eps_v = B_kN**(-1)
     eps_l = (B_kN1)/B_kN
 
@@ -56,6 +64,7 @@ def absorber_bubble_point(P, T,  antoine_coeffs, LN, n_majority, n, tol = 0.05, 
     '''
     iterations = 1
     while  iterations < maxiter:
+        # calculate vapor presure and relative volatilities
         p_vaps = get_vapor_pressure(antoine_coeffs, T);
 
         K = p_vaps/P
@@ -64,6 +73,7 @@ def absorber_bubble_point(P, T,  antoine_coeffs, LN, n_majority, n, tol = 0.05, 
         xk = LN/np.sum(LN)
         alpha_bar = np.sum(xk * alpha_k)
 
+        # Iterate and find bubble point for fixed pressure
         P_vap = P * alpha_k[n_majority]/alpha_bar
         A, B, C = antoine_coeffs[n_majority]
         T_calc = B/(A-np.log(P_vap)) - C
@@ -87,6 +97,9 @@ def absorber_shortcut(P, T, eps, AE, antoine_coeffs):
     AE: some parameter which needs to be specified for absorber
     antoine_coeffs: Array of anotine coefficients for each component
 
+    returns
+    Eps_v - vapor split fractions
+    Eps_l - liquid split fractions
     '''
     #Get vapor pressures using Antoine's equation for each component
     p_vaps = get_vapor_pressure(antoine_coeffs, T);
