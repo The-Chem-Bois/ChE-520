@@ -41,7 +41,7 @@ print(absorber_shortcut(51004.2, 310, epsilon, 10, antoine_coeffs))
 # Now do flash calculations and solve for temperatures in each unit operation
 
 epsilon = Epsilon(0.5, 4)
-fk_1 = np.array([766.2, 96.29, 1277, 60.50])
+fk_1 = np.array([766.2, 96.29, 1277, 2.50])
 print ('---- flash calculations ------')
 case1_solver(epsilon, antoine_coeffs, 390, 51379.22, fk_1, 'P' )
 u31 = np.array([44.49, 11.55, 1257.845,1.21 ])
